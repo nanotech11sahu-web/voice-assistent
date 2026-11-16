@@ -1,3 +1,6 @@
+// Node 18 has no global WebCrypto; msedge-tts needs it.
+import { webcrypto } from 'crypto';
+if (!(globalThis as any).crypto) (globalThis as any).crypto = webcrypto;
 import 'reflect-metadata';
 import { Module, Controller, Get, Post, Req, Query } from '@nestjs/common';
 import OpenAI, { toFile } from 'openai';
