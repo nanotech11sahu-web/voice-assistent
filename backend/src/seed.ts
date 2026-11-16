@@ -51,6 +51,7 @@ const leads = [
 
 (async () => {
   await mongoose.connect(cfg.mongo);
+  if (process.argv.includes('--if-empty') && (await Portfolio.countDocuments()) > 0) { console.log('Seed data already present, skipping.'); await mongoose.disconnect(); return; }
   // requirements and call_logs are runtime data: never touched here.
   for (const [M, d] of [[Portfolio, portfolio], [Service, services], [Faq, faqs], [Objection, objections], [Lead, leads]] as any) {
     await M.deleteMany({}); await M.insertMany(d);
