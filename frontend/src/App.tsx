@@ -38,7 +38,7 @@ export default function App() {
     if (!item) { if (turnDone.current && inCall.current) { setTimeout(() => { if (inCall.current && !playing.current) stt.current.resume(); }, 250); idleNow(); } return; }
     if (!item.data) return playNext();
     clearSilence(); playing.current = true; setStatus('speaking'); if (!headphones.current) stt.current.pause();
-    const a = new Audio('data:audio/mpeg;base64,' + item.data); audio.current = a;
+    const a = new Audio('data:' + (item.data.startsWith('UklGR') ? 'audio/wav' : 'audio/mpeg') + ';base64,' + item.data); audio.current = a;
     a.onended = a.onerror = () => { playing.current = false; lastPlayEnd.current = Date.now(); playNext(); };
     a.play().catch(() => { playing.current = false; playNext(); });
   };

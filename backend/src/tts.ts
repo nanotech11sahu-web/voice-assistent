@@ -18,7 +18,23 @@ function run(e: { tts: any }, text: string): Promise<Buffer> {
   });
 }
 export function warmUp(voice: string) { if (!pool.has(voice)) open(voice); }
+// Backup voice for cloud hosting: Microsoft's free service often refuses datacenter IPs, so fall back to Groq's Orpheus (English only).
+async function groqSpeech(text: string): Promise<Buffer> {
+  const key = process.env.GROK_API_KEY; if (!key || !process.env.LLM_BASE_URL?.includes('groq')) throw new Error('no backup tts');
+  const r = await fetch(process.env.LLM_BASE_URL + '/audio/speech', { method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: process.env.GROQ_TTS_MODEL || 'canopylabs/orpheus-v1-english', voice: process.env.GROQ_TTS_VOICE || 'tara', input: text.slice(0, 190), response_format: 'wav' }), signal: AbortSignal.timeout(15000) });
+  if (!r.ok) throw new Error('groq tts ' + r.status); return Buffer.from(await r.arrayBuffer());
+}
+let edgeBroken = 0; // timestamp until which we skip Edge after repeated failures (saves a wait on every sentence)
 export async function synth(text: string, voice: string): Promise<Buffer> {
+  if (Date.now() < edgeBroken && voice.startsWith('en')) { try { return await groqSpeech(text); } catch { /* fall through to Edge */ } }
+  try { return await synthEdge(text, voice); }
+  catch (e) {
+    if (voice.startsWith('en')) { try { const b = await groqSpeech(text); edgeBroken = Date.now() + 5 * 60_000; return b; } catch { /* no backup available */ } }
+    throw e;
+  }
+}
+async function synthEdge(text: string, voice: string): Promise<Buffer> {
   let e = pool.get(voice) || open(voice);
   const job = e.chain.then(async () => {
     try { await e.ready; return await run(e, text); }
