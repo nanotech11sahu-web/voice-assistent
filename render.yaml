@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: nayandeep-voice-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    envVars:
+      - key: GROK_API_KEY
+        sync: false
+      - key: LLM_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: GROK_MODEL
+        value: openai/gpt-oss-120b
+      - key: MONGODB_URI
+        sync: false
